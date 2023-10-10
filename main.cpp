@@ -1,4 +1,6 @@
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 #ifdef _WIN32
@@ -24,35 +26,20 @@ static std::vector<TString> get_command_line() {
   }
   LocalFree(argvW);
 #else
-  auto f = fopen("/proc/self/cmdline", "rb");
-  char ch;
-  int argc = 0;
-  if (f) {
-    while ((ch = fgetc(f)) != EOF) {
-      if (ch == '\0')
-        argc++;
-    }
-    fseek(f, 0, SEEK_SET);
-    char **argv = malloc((argc + 1) * sizeof(char *));
-    char *arg = NULL;
-    size_t size;
-    for (int i = 0; i < argc; i++) {
-      getline(&arg, &size, f); // Read until \0
-      argv[i] = strdup(arg);   // Copy the argument
-    }
-    argv[argc] = NULL; // NULL-terminate the list
-
-    // Use argc and argv as needed
-    res.reserve(argc);
-    for (int i = 0; i != argc; ++i) {
-      res.push_back(argv[i]);
-    }
-
-    for (int i = 0; i < argc; i++)
-      free(argv[i]);
-    free(argv);
-  } else {
+  std::ifstream file("/proc/self/cmdline", std::ios::in);
+  if (file.fail())
     return {};
+  std::string s;
+  char c;
+  while (file.get(c)) {
+    if (c == '\0') {
+      if (!s.empty()) {
+        res.push_back(s);
+        s.clear();
+      }
+    } else {
+      s.push_back(c);
+    }
   }
 #endif
   return res;
