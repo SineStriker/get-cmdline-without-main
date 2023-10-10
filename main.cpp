@@ -9,6 +9,9 @@
 using TChar = wchar_t;
 using TString = std::wstring;
 #else
+#ifdef __APPLE__
+#include <crt_externs.h>
+#endif
 using TChar = char;
 using TString = std::string;
 #endif
@@ -25,6 +28,11 @@ static std::vector<TString> get_command_line() {
     res.push_back(argvW[i]);
   }
   LocalFree(argvW);
+#elif defined(__APPLE__)
+  char **argv = *(_NSGetArgv());
+  for (int i = 0; argv[i] != nullptr; ++i) {
+    res.push_back(argv[i]);
+  }
 #else
   std::ifstream file("/proc/self/cmdline", std::ios::in);
   if (file.fail())
